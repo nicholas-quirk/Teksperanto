@@ -71,6 +71,7 @@ public class UI {
 		areaScrollPane.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED);
 		panel.add(searchResultsPane, BorderLayout.PAGE_END);
 
+		frame.setTitle("Teksperanto");
 		frame.setJMenuBar(menuBar);
 		frame.add(panel);
 		frame.setSize(400, 600);
