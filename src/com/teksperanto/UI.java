@@ -5,10 +5,18 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.KeyEvent;
 import java.awt.event.KeyListener;
+import java.io.BufferedReader;
+import java.io.BufferedWriter;
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.FileReader;
+import java.io.FileWriter;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
 
 import javax.swing.JButton;
+import javax.swing.JFileChooser;
 import javax.swing.JFrame;
 import javax.swing.JMenu;
 import javax.swing.JMenuBar;
@@ -17,13 +25,17 @@ import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.JTextArea;
 import javax.swing.JTextField;
+import javax.swing.filechooser.FileFilter;
+import javax.swing.filechooser.FileNameExtensionFilter;
 
 /**
  * 
  * @author Nicholas Quirk
- *
+ * 
  */
-public class UI {
+public class UI extends JFrame {
+
+	private static final long serialVersionUID = 1L;
 
 	// GUI Members.
 	JTextArea textArea;
@@ -34,6 +46,7 @@ public class UI {
 	JTextField searchField;
 	JButton searchButton;
 	JTextArea searchResults;
+	JFileChooser fc;
 
 	// Helper Members.
 	HashMap<String, String> eoToEn = new HashMap<String, String>();
@@ -57,7 +70,8 @@ public class UI {
 		createSearchResults();
 
 		JScrollPane areaScrollPane = new JScrollPane(textArea);
-		areaScrollPane.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED);
+		areaScrollPane
+				.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED);
 
 		searchPanel = new JPanel(new BorderLayout());
 		searchPanel.add(searchField, BorderLayout.LINE_START);
@@ -68,7 +82,8 @@ public class UI {
 		panel.add(searchPanel, BorderLayout.PAGE_START);
 
 		JScrollPane searchResultsPane = new JScrollPane(searchResults);
-		areaScrollPane.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED);
+		areaScrollPane
+				.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED);
 		panel.add(searchResultsPane, BorderLayout.PAGE_END);
 
 		frame.setTitle("Teksperanto");
@@ -101,7 +116,8 @@ public class UI {
 
 			@Override
 			public void actionPerformed(ActionEvent arg0) {
-				String searchText = searchField.getText();
+				String searchText = EsperantoSubstitutor
+						.translateCharacters(searchField.getText());
 				boolean exactMatch = (searchText.startsWith("'") && searchText
 						.endsWith("'"));
 				for (String key : eoToEn.keySet()) {
@@ -152,6 +168,43 @@ public class UI {
 			}
 		});
 
+		FileFilter filter = new FileNameExtensionFilter("Text file", "txt");
+
+		fc = new JFileChooser();
+		fc.setFileFilter(filter);
+
+		JMenuItem menuItemOpen = new JMenuItem();
+		menuItemOpen.setText("Open");
+		menuItemOpen.addActionListener(new ActionListener() {
+
+			@Override
+			public void actionPerformed(ActionEvent arg0) {
+				int returnVal = fc.showOpenDialog(UI.this);
+
+				if (returnVal == JFileChooser.APPROVE_OPTION) {
+					File file = fc.getSelectedFile();
+					textArea.setText(readFile(file));
+				}
+			}
+		});
+
+		JMenuItem menuItemSave = new JMenuItem();
+		menuItemSave.setText("Save");
+		menuItemSave.addActionListener(new ActionListener() {
+
+			@Override
+			public void actionPerformed(ActionEvent arg0) {
+				int returnVal = fc.showSaveDialog(UI.this);
+
+				if (returnVal == JFileChooser.APPROVE_OPTION) {
+					File file = fc.getSelectedFile();
+					writeFile(file, textArea.getText());
+				}
+			}
+		});
+
+		fileMenu.add(menuItemOpen);
+		fileMenu.add(menuItemSave);
 		fileMenu.add(menuItemExit);
 	}
 
@@ -177,5 +230,50 @@ public class UI {
 
 			}
 		});
+	}
+
+	private String readFile(File file) {
+		String everything = "";
+		try {
+			BufferedReader br = new BufferedReader(new FileReader(file));
+			try {
+				StringBuilder sb = new StringBuilder();
+				String line = br.readLine();
+
+				while (line != null) {
+					sb.append(line);
+					sb.append("\n");
+					line = br.readLine();
+				}
+				everything = sb.toString();
+			} catch (IOException e) {
+				e.printStackTrace();
+			} finally {
+				try {
+					br.close();
+				} catch (IOException e) {
+					e.printStackTrace();
+				}
+			}
+		} catch (FileNotFoundException e) {
+			e.printStackTrace();
+		}
+		return everything;
+	}
+
+	private void writeFile(File file, String content) {
+		try {
+			if (!file.exists()) {
+				file.createNewFile();
+			}
+
+			FileWriter fw = new FileWriter(file.getAbsoluteFile());
+			BufferedWriter bw = new BufferedWriter(fw);
+			bw.write(content);
+			bw.close();
+
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
 	}
 }
