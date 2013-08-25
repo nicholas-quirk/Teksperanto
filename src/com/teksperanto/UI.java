@@ -29,251 +29,242 @@ import javax.swing.filechooser.FileFilter;
 import javax.swing.filechooser.FileNameExtensionFilter;
 
 /**
- * 
+ *
  * @author Nicholas Quirk
- * 
+ *
  */
 public class UI extends JFrame {
 
-	private static final long serialVersionUID = 1L;
+    private static final long serialVersionUID = 1L;
+    // GUI Members.
+    JTextArea textArea;
+    JMenuBar menuBar;
+    JMenu fileMenu;
+    JPanel panel;
+    JPanel searchPanel;
+    JTextField searchField;
+    JButton searchButton;
+    JTextArea searchResults;
+    JFileChooser fc;
+    // Helper Members.
+    HashMap<String, String> eoToEn = new HashMap<String, String>();
+    ArrayList<String> results = new ArrayList<String>();
+    Long lastKeyPressTime = 0l;
 
-	// GUI Members.
-	JTextArea textArea;
-	JMenuBar menuBar;
-	JMenu fileMenu;
-	JPanel panel;
-	JPanel searchPanel;
-	JTextField searchField;
-	JButton searchButton;
-	JTextArea searchResults;
-	JFileChooser fc;
+    public UI() {
 
-	// Helper Members.
-	HashMap<String, String> eoToEn = new HashMap<String, String>();
-	ArrayList<String> results = new ArrayList<String>();
-	Long lastKeyPressTime = 0l;
+        JFrame frame = new JFrame();
 
-	public UI() {
+        createFileMenu();
 
-		JFrame frame = new JFrame();
+        createFileMenuChoices();
 
-		createFileMenu();
+        createTextArea();
 
-		createFileMenuChoices();
+        createDictionarySearchButton();
 
-		createTextArea();
+        createSearchField();
 
-		createDictionarySearchButton();
+        createSearchResults();
 
-		createSearchField();
+        JScrollPane areaScrollPane = new JScrollPane(textArea);
+        areaScrollPane
+                .setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED);
 
-		createSearchResults();
+        searchPanel = new JPanel(new BorderLayout());
+        searchPanel.add(searchField, BorderLayout.LINE_START);
+        searchPanel.add(searchButton, BorderLayout.CENTER);
 
-		JScrollPane areaScrollPane = new JScrollPane(textArea);
-		areaScrollPane
-				.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED);
+        panel = new JPanel(new BorderLayout());
+        panel.add(areaScrollPane, BorderLayout.CENTER);
+        panel.add(searchPanel, BorderLayout.PAGE_START);
 
-		searchPanel = new JPanel(new BorderLayout());
-		searchPanel.add(searchField, BorderLayout.LINE_START);
-		searchPanel.add(searchButton, BorderLayout.CENTER);
+        JScrollPane searchResultsPane = new JScrollPane(searchResults);
+        areaScrollPane
+                .setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED);
+        panel.add(searchResultsPane, BorderLayout.PAGE_END);
 
-		panel = new JPanel(new BorderLayout());
-		panel.add(areaScrollPane, BorderLayout.CENTER);
-		panel.add(searchPanel, BorderLayout.PAGE_START);
+        frame.setTitle("Teksperanto");
+        frame.setJMenuBar(menuBar);
+        frame.add(panel);
+        frame.setSize(400, 600);
+        frame.setLocationRelativeTo(null);
+        frame.setVisible(true);
+        frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 
-		JScrollPane searchResultsPane = new JScrollPane(searchResults);
-		areaScrollPane
-				.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED);
-		panel.add(searchResultsPane, BorderLayout.PAGE_END);
+        EsperantoSubstitutor es = new EsperantoSubstitutor(textArea,
+                lastKeyPressTime);
+        es.start();
 
-		frame.setTitle("Teksperanto");
-		frame.setJMenuBar(menuBar);
-		frame.add(panel);
-		frame.setSize(400, 600);
-		frame.setLocationRelativeTo(null);
-		frame.setVisible(true);
-		frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+        eoToEn = (new EspdicLoader()).createDictionary();
+    }
 
-		EsperantoSubstitutor es = new EsperantoSubstitutor(textArea,
-				lastKeyPressTime);
-		es.start();
+    private void createSearchResults() {
+        searchResults = new JTextArea();
+        searchResults.setRows(5);
+    }
 
-		eoToEn = (new EspdicLoader()).createDictionary();
-	}
+    private void createSearchField() {
+        searchField = new JTextField(25);
+    }
 
-	private void createSearchResults() {
-		searchResults = new JTextArea();
-		searchResults.setRows(5);
-	}
+    private void createDictionarySearchButton() {
+        searchButton = new JButton("Search");
+        searchButton.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent arg0) {
+                String searchText = EsperantoSubstitutor
+                        .translateCharacters(searchField.getText());
+                boolean exactMatch = (searchText.startsWith("'") && searchText
+                        .endsWith("'"));
+                for (String key : eoToEn.keySet()) {
+                    if (exactMatch) {
+                        if (key.trim().equalsIgnoreCase(
+                                searchText.replace("'", ""))) {
+                            results.add(key + " : " + eoToEn.get(key));
+                        }
+                        if (eoToEn.get(key).trim()
+                                .equalsIgnoreCase(searchText.replace("'", ""))) {
+                            results.add(key + " : " + eoToEn.get(key));
+                        }
+                    } else {
+                        if (key.contains(searchText)) {
+                            results.add(key + " : " + eoToEn.get(key));
+                        }
+                        if (eoToEn.get(key).contains(searchText)) {
+                            results.add(key + " : " + eoToEn.get(key));
+                        }
+                    }
+                }
+                String sr = "";
+                for (String s : results) {
+                    sr += s + "\n";
+                }
+                searchResults.setText(sr);
+                results = new ArrayList<String>();
+            }
+        });
+    }
 
-	private void createSearchField() {
-		searchField = new JTextField(25);
-	}
+    private void createFileMenu() {
+        fileMenu = new JMenu("File");
 
-	private void createDictionarySearchButton() {
-		searchButton = new JButton("Search");
-		searchButton.addActionListener(new ActionListener() {
+        menuBar = new JMenuBar();
+        menuBar.add(fileMenu);
+    }
 
-			@Override
-			public void actionPerformed(ActionEvent arg0) {
-				String searchText = EsperantoSubstitutor
-						.translateCharacters(searchField.getText());
-				boolean exactMatch = (searchText.startsWith("'") && searchText
-						.endsWith("'"));
-				for (String key : eoToEn.keySet()) {
-					if (exactMatch) {
-						if (key.trim().equalsIgnoreCase(
-								searchText.replace("'", ""))) {
-							results.add(key + " : " + eoToEn.get(key));
-						}
-						if (eoToEn.get(key).trim()
-								.equalsIgnoreCase(searchText.replace("'", ""))) {
-							results.add(key + " : " + eoToEn.get(key));
-						}
-					} else {
-						if (key.contains(searchText)) {
-							results.add(key + " : " + eoToEn.get(key));
-						}
-						if (eoToEn.get(key).contains(searchText)) {
-							results.add(key + " : " + eoToEn.get(key));
-						}
-					}
-				}
-				String sr = "";
-				for (String s : results) {
-					sr += s + "\n";
-				}
-				searchResults.setText(sr);
-				results = new ArrayList<String>();
-			}
+    private void createFileMenuChoices() {
+        JMenuItem menuItemExit = new JMenuItem();
+        menuItemExit.setText("Exit");
+        menuItemExit.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent arg0) {
+                System.exit(0);
+            }
+        });
 
-		});
-	}
+        FileFilter filter = new FileNameExtensionFilter("Text file", "txt");
 
-	private void createFileMenu() {
-		fileMenu = new JMenu("File");
+        fc = new JFileChooser();
+        fc.setFileFilter(filter);
 
-		menuBar = new JMenuBar();
-		menuBar.add(fileMenu);
-	}
+        JMenuItem menuItemOpen = new JMenuItem();
+        menuItemOpen.setText("Open");
+        menuItemOpen.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent arg0) {
+                int returnVal = fc.showOpenDialog(UI.this);
 
-	private void createFileMenuChoices() {
-		JMenuItem menuItemExit = new JMenuItem();
-		menuItemExit.setText("Exit");
-		menuItemExit.addActionListener(new ActionListener() {
+                if (returnVal == JFileChooser.APPROVE_OPTION) {
+                    File file = fc.getSelectedFile();
+                    textArea.setText(readFile(file));
+                }
+            }
+        });
 
-			@Override
-			public void actionPerformed(ActionEvent arg0) {
-				System.exit(0);
-			}
-		});
+        JMenuItem menuItemSave = new JMenuItem();
+        menuItemSave.setText("Save");
+        menuItemSave.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent arg0) {
+                int returnVal = fc.showSaveDialog(UI.this);
 
-		FileFilter filter = new FileNameExtensionFilter("Text file", "txt");
+                if (returnVal == JFileChooser.APPROVE_OPTION) {
+                    File file = fc.getSelectedFile();
+                    writeFile(file, textArea.getText());
+                }
+            }
+        });
 
-		fc = new JFileChooser();
-		fc.setFileFilter(filter);
+        fileMenu.add(menuItemOpen);
+        fileMenu.add(menuItemSave);
+        fileMenu.add(menuItemExit);
+    }
 
-		JMenuItem menuItemOpen = new JMenuItem();
-		menuItemOpen.setText("Open");
-		menuItemOpen.addActionListener(new ActionListener() {
+    private void createTextArea() {
+        textArea = new JTextArea("Saluton!");
+        textArea.setWrapStyleWord(true);
+        textArea.setSize(400, 600);
+        textArea.setLineWrap(true);
+        textArea.setAutoscrolls(true);
+        textArea.addKeyListener(new KeyListener() {
+            @Override
+            public void keyPressed(KeyEvent arg0) {
+                lastKeyPressTime = System.currentTimeMillis();
+            }
 
-			@Override
-			public void actionPerformed(ActionEvent arg0) {
-				int returnVal = fc.showOpenDialog(UI.this);
+            @Override
+            public void keyReleased(KeyEvent arg0) {
+            }
 
-				if (returnVal == JFileChooser.APPROVE_OPTION) {
-					File file = fc.getSelectedFile();
-					textArea.setText(readFile(file));
-				}
-			}
-		});
+            @Override
+            public void keyTyped(KeyEvent arg0) {
+            }
+        });
+    }
 
-		JMenuItem menuItemSave = new JMenuItem();
-		menuItemSave.setText("Save");
-		menuItemSave.addActionListener(new ActionListener() {
+    private String readFile(File file) {
+        String everything = "";
+        try {
+            BufferedReader br = new BufferedReader(new FileReader(file));
+            try {
+                StringBuilder sb = new StringBuilder();
+                String line = br.readLine();
 
-			@Override
-			public void actionPerformed(ActionEvent arg0) {
-				int returnVal = fc.showSaveDialog(UI.this);
+                while (line != null) {
+                    sb.append(line);
+                    sb.append("\n");
+                    line = br.readLine();
+                }
+                everything = sb.toString();
+            } catch (IOException e) {
+                e.printStackTrace();
+            } finally {
+                try {
+                    br.close();
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            }
+        } catch (FileNotFoundException e) {
+            e.printStackTrace();
+        }
+        return everything;
+    }
 
-				if (returnVal == JFileChooser.APPROVE_OPTION) {
-					File file = fc.getSelectedFile();
-					writeFile(file, textArea.getText());
-				}
-			}
-		});
+    private void writeFile(File file, String content) {
+        try {
+            if (!file.exists()) {
+                file.createNewFile();
+            }
 
-		fileMenu.add(menuItemOpen);
-		fileMenu.add(menuItemSave);
-		fileMenu.add(menuItemExit);
-	}
+            FileWriter fw = new FileWriter(file.getAbsoluteFile());
+            BufferedWriter bw = new BufferedWriter(fw);
+            bw.write(content);
+            bw.close();
 
-	private void createTextArea() {
-		textArea = new JTextArea("Saluton!");
-		textArea.setWrapStyleWord(true);
-		textArea.setSize(400, 600);
-		textArea.setLineWrap(true);
-		textArea.setAutoscrolls(true);
-		textArea.addKeyListener(new KeyListener() {
-			@Override
-			public void keyPressed(KeyEvent arg0) {
-				lastKeyPressTime = System.currentTimeMillis();
-			}
-
-			@Override
-			public void keyReleased(KeyEvent arg0) {
-
-			}
-
-			@Override
-			public void keyTyped(KeyEvent arg0) {
-
-			}
-		});
-	}
-
-	private String readFile(File file) {
-		String everything = "";
-		try {
-			BufferedReader br = new BufferedReader(new FileReader(file));
-			try {
-				StringBuilder sb = new StringBuilder();
-				String line = br.readLine();
-
-				while (line != null) {
-					sb.append(line);
-					sb.append("\n");
-					line = br.readLine();
-				}
-				everything = sb.toString();
-			} catch (IOException e) {
-				e.printStackTrace();
-			} finally {
-				try {
-					br.close();
-				} catch (IOException e) {
-					e.printStackTrace();
-				}
-			}
-		} catch (FileNotFoundException e) {
-			e.printStackTrace();
-		}
-		return everything;
-	}
-
-	private void writeFile(File file, String content) {
-		try {
-			if (!file.exists()) {
-				file.createNewFile();
-			}
-
-			FileWriter fw = new FileWriter(file.getAbsoluteFile());
-			BufferedWriter bw = new BufferedWriter(fw);
-			bw.write(content);
-			bw.close();
-
-		} catch (IOException e) {
-			e.printStackTrace();
-		}
-	}
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
 }
